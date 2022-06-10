@@ -28,7 +28,7 @@ class Settings:
         self.min_lr = 1e-5
         self.beta1 = 0.9
         self.beta2 = 0.999
-        self.max_epochs = 5
+        self.max_epochs = 8
         self.weight_decay = 5e-5
         self.warmup_epoch = 5
         self.precision = 16
