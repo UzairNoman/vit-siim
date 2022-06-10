@@ -13,7 +13,10 @@ def get_criterion(args):
         if args.label_smoothing:
             criterion = LabelSmoothingCrossEntropyLoss(args.num_classes, smoothing=args.smoothing)
         else:
-            criterion = nn.CrossEntropyLoss()
+            #criterion = nn.CrossEntropyLoss()
+            pos_weight  = 32542 / 584
+            pos_weight = torch.as_tensor(pos_weight, dtype=torch.float)
+            criterion = nn.BCEWithLogitsLoss(pos_weight= pos_weight)
     else:
         raise ValueError(f"{args.criterion}?")
 
