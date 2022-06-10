@@ -1,10 +1,12 @@
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
-
+import torch
 from autoaugment import CIFAR10Policy, SVHNPolicy
 from criterions import LabelSmoothingCrossEntropyLoss
 from da import RandomCropPaste
+from siim import SIIM
+from transforms import Resizeit
 
 def get_criterion(args):
     if args.criterion=="ce":
@@ -40,9 +42,9 @@ def get_model(args):
 def get_transform(args):
     train_transform = []
     test_transform = []
-    train_transform += [
-        transforms.RandomCrop(size=args.size, padding=args.padding)
-    ]
+    # train_transform += [
+    #     transforms.RandomCrop(size=args.size, padding=args.padding)
+    # ]
     if args.dataset != 'svhn':
         train_transform += [transforms.RandomHorizontalFlip()]
     
@@ -52,17 +54,25 @@ def get_transform(args):
         elif args.dataset == 'svhn':
             train_transform.append(SVHNPolicy())
         else:
-            print(f"No AutoAugment for {args.dataset}")   
+            print(f"No AutoAugment for {args.dataset}")
+
+    if args.dataset == 'siim':
+        train_transform += [transforms.Resize(size=(32, 32))] 
+        test_transform += [transforms.Resize(size=(32, 32))] 
+    else:
+        train_transform.append(transforms.ToTensor())
+        test_transform.append(transforms.ToTensor())
+
 
     train_transform += [
-        transforms.ToTensor(),
+        #transforms.ToTensor(),
         transforms.Normalize(mean=args.mean, std=args.std)
     ]
-    if args.rcpaste:
-        train_transform += [RandomCropPaste(size=args.size)]
+    # if args.rcpaste:
+    #     train_transform += [RandomCropPaste(size=args.size)]
     
     test_transform += [
-        transforms.ToTensor(),
+        #transforms.ToTensor(),
         transforms.Normalize(mean=args.mean, std=args.std)
     ]
 
@@ -81,7 +91,7 @@ def get_dataset(args):
         args.padding = 4
         args.mean, args.std = [0.4914, 0.4822, 0.4465], [0.2470, 0.2435, 0.2616]
         train_transform, test_transform = get_transform(args)
-        train_ds = torchvision.datasets.CIFAR10(root, train=True, transform=train_transform, download=True)
+        train_ds = torchvision.datasets.CIFAR10(root, train=True, transform=train_transform, download=True)  
         test_ds = torchvision.datasets.CIFAR10(root, train=False, transform=test_transform, download=True)
 
     elif args.dataset == "c100":
@@ -93,6 +103,20 @@ def get_dataset(args):
         train_transform, test_transform = get_transform(args)
         train_ds = torchvision.datasets.CIFAR100(root, train=True, transform=train_transform, download=True)
         test_ds = torchvision.datasets.CIFAR100(root, train=False, transform=test_transform, download=True)
+    
+    elif args.dataset == "siim":
+        args.in_c = 3
+        args.num_classes=2
+        args.size = 32
+        args.padding = 4
+        root = f'{root}/siim'
+        args.mean, args.std = [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]
+        train_transform, test_transform = get_transform(args)
+        
+        train_ds = SIIM(root, purpose='train', seed=args.seed, split=0.7, transforms=train_transform)#, tfm_on_patch=tfm_on_patch)
+        test_ds = SIIM(root, purpose='val', seed=args.seed, split=0.7, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
+       # train_ds = torchvision.datasets.CIFAR100(root, train=True, transform=train_transform, download=True)
+        #test_ds = torchvision.datasets.CIFAR100(root, train=False, transform=test_transform, download=True)
 
     elif args.dataset == "svhn":
         args.in_c = 3
