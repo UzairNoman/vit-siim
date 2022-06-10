@@ -37,7 +37,7 @@ class SIIM(Dataset):
                                         [int(split*meta_df.shape[0]), int(((1.0-split)/2.0+split)*meta_df.shape[0])])
 
         ############### this here needs to go
-     
+        '''
         if purpose=='train':
             return ['ISIC_0015719','ISIC_0052212','ISIC_0068279','ISIC_0074268',
             'ISIC_0074311','ISIC_0074542','ISIC_0075663','ISIC_0075914',
@@ -79,7 +79,7 @@ class SIIM(Dataset):
                 'ISIC_0089569',
                 'ISIC_0089738',
                 'ISIC_0090279'], [0,0,1,0,0,0,0,1,0,0,0,1,0,0,0]
-     
+        '''
         ######################
 
         if purpose=='train':
