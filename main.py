@@ -18,8 +18,8 @@ import os
 
 class Settings:
     def __init__(self):
-        self.dataset = "c10"
-        self.num_classes = 10
+        self.dataset = "siim"
+        self.num_classes = 2
         self.model_name = "vit"
         self.patch = 8
         self.batch_size = 128
@@ -136,7 +136,7 @@ class Net(pl.LightningModule):
     def validation_epoch_end(self, outputs):
         preds = torch.cat([tmp['preds'] for tmp in outputs])
         targets = torch.cat([tmp['target'] for tmp in outputs])
-        confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=2)
+        confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=args.num_classes)
 
         df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index = range(2), columns=range(2))
         plt.figure(figsize = (2,4))
