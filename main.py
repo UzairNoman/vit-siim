@@ -138,13 +138,13 @@ class Net(pl.LightningModule):
         targets = torch.cat([tmp['target'] for tmp in outputs])
         confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=args.num_classes)
 
-        df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index = range(2), columns=range(2))
-        plt.figure(figsize = (2,4))
+        df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index = range(args.num_classes), columns=range(args.num_classes))
+        plt.figure(figsize = (args.num_classes,args.num_classes*2))
         fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
         plt.close(fig_)
 
         repo_root = os.path.abspath(os.getcwd())
-        data_root = os.path.join(repo_root, "logs")
+        data_root = os.path.join(repo_root, "logs/vit_siim")
         list_of_files = glob.glob(f'{data_root}/*') # * means all if need specific format then *.csv
         latest_file = max(list_of_files, key=os.path.getctime)
         writer = SummaryWriter(latest_file)

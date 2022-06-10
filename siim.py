@@ -7,8 +7,9 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 from torchvision.io import read_image
+import math
 class SIIM(Dataset):
-    """Gon Refuge dataset class"""
+    """SIIM dataset class"""
 
     def __init__(self, root, purpose, seed, split, transforms=None, tfm_on_patch=None):
         self.root_path = root
@@ -35,6 +36,16 @@ class SIIM(Dataset):
         #do we want to apply stratification here?
         train, val, test = np.split(meta_df.sample(frac=1, random_state=seed), 
                                         [int(split*meta_df.shape[0]), int(((1.0-split)/2.0+split)*meta_df.shape[0])])
+
+        #(23188, 8)
+        trueRows = train[train['target'] == 1]
+        falseRows = train[train['target'] == 0]
+        replicas = pd.concat([trueRows]*(math.ceil(23188/400)))
+        
+        oversampled = falseRows.append(replicas[:22788], ignore_index=True)
+
+
+
 
         ############### this here needs to go
         '''
@@ -83,7 +94,7 @@ class SIIM(Dataset):
         ######################
 
         if purpose=='train':
-            return train['image_name'].tolist(), train['target'].tolist()
+            return oversampled['image_name'].tolist(), oversampled['target'].tolist()
         elif purpose=='val':
             return val['image_name'].tolist(), val['target'].tolist()
         elif purpose=='test':
