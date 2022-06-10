@@ -18,7 +18,7 @@ import os
 
 class Settings:
     def __init__(self):
-        self.dataset = "siim"
+        self.dataset = "c10"
         self.num_classes = 10
         self.model_name = "vit"
         self.patch = 8
@@ -109,7 +109,7 @@ class Net(pl.LightningModule):
             loss = self.criterion(out, label)*lambda_ + self.criterion(out, rand_label)*(1.-lambda_)
         else:
             out = self(img)
-            loss = self.criterion(out, label)
+            loss = self.criterion(out[:,1], label.float())
 
         if not self.log_image_flag and not self.hparams.dry_run:
             self.log_image_flag = True
@@ -127,7 +127,7 @@ class Net(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         img, label = batch
         out = self(img)
-        loss = self.criterion(out, label)
+        loss = self.criterion(out[:,1], label.float())
         acc = torch.eq(out.argmax(-1), label).float().mean()
         self.log("val_loss", loss)
         self.log("val_acc", acc)
@@ -144,7 +144,7 @@ class Net(pl.LightningModule):
         plt.close(fig_)
 
         repo_root = os.path.abspath(os.getcwd())
-        data_root = os.path.join(repo_root, "logg")
+        data_root = os.path.join(repo_root, "logs")
         list_of_files = glob.glob(f'{data_root}/*') # * means all if need specific format then *.csv
         latest_file = max(list_of_files, key=os.path.getctime)
         writer = SummaryWriter(latest_file)
