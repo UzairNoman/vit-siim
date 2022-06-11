@@ -12,10 +12,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from utils import get_model, get_dataset, get_experiment_name, get_criterion
 from da import CutMix, MixUp
-from torch.utils.tensorboard import SummaryWriter
-import glob
-import os
-
+from pytorch_lightning.loggers import TensorBoardLogger
 class Settings:
     def __init__(self):
         self.dataset = "siim"
@@ -116,8 +113,10 @@ class Net(pl.LightningModule):
             #self._log_image(img.clone().detach().cpu())
 
         acc = torch.eq(out.argmax(-1), label).float().mean()
-        self.log("loss", loss)
-        self.log("acc", acc)
+        auc = metrics.roc_auc_score(label, out[:, 1].squeeze())
+        self.log('auc', auc, on_step=True, on_epoch=True)
+        self.log('acc', acc, on_step=True, on_epoch=True)
+        self.log('loss', loss,on_step=True, on_epoch=True)
         return loss
 
     def training_epoch_end(self, outputs):
@@ -129,8 +128,17 @@ class Net(pl.LightningModule):
         out = self(img)
         loss = self.criterion(out[:,1], label.float())
         acc = torch.eq(out.argmax(-1), label).float().mean()
-        self.log("val_loss", loss)
-        self.log("val_acc", acc)
+        #self.log("val_loss", loss)
+        #self.log("val_acc", acc)
+
+        auc = metrics.roc_auc_score(label, out[:, 1].squeeze())
+        self.log('auc', auc, on_step=True, on_epoch=True)
+        val_acc = torchmetrics.functional.accuracy(out[:, 1], label)
+        self.log('valid_acc_from_tmet', val_acc, on_step=True, on_epoch=True)
+        self.log('valid_acc', acc, on_step=True, on_epoch=True)
+        self.log('val_loss', loss,on_step=True, on_epoch=True)
+
+
         return { 'loss': loss.item(), 'preds': out, 'target': label}
 
     def validation_epoch_end(self, outputs):
@@ -143,24 +151,18 @@ class Net(pl.LightningModule):
         fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
         plt.close(fig_)
 
-        repo_root = os.path.abspath(os.getcwd())
-        data_root = os.path.join(repo_root, "logs/vit_siim")
-        list_of_files = glob.glob(f'{data_root}/*') # * means all if need specific format then *.csv
-        latest_file = max(list_of_files, key=os.path.getctime)
-        writer = SummaryWriter(latest_file)
-        writer.add_figure("Confusion matrix", fig_, self.current_epoch)
-        #self.logger.experiment.add_image("Confusion matrix", fig_, self.current_epoch)
+        self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
+        # repo_root = os.path.abspath(os.getcwd())
+        # data_root = os.path.join(repo_root, "logs")
+        # list_of_files = glob.glob(f'{data_root}/*') # * means all if need specific format then *.csv
+        # latest_file = max(list_of_files, key=os.path.getctime)
+        # writer = SummaryWriter(latest_file)
+        # writer.add_figure("Confusion matrix", fig_, self.current_epoch)
 
     # def _log_image(self, image):
     #     grid = torchvision.utils.make_grid(image, nrow=4)
     #     self.logger.experiment.log_image(grid.permute(1,2,0))
     #     print("[INFO] LOG IMAGE!!!")
-
-
-
-
-
-
 
 if __name__ == "__main__":
     experiment_name = get_experiment_name(args)
@@ -175,13 +177,14 @@ if __name__ == "__main__":
         refresh_rate = 0
     else:
         print("[INFO] Log with CSV")
-        logger = pl.loggers.CSVLogger(
-            save_dir="logs",
-            name=experiment_name
-        )
+        # logger = pl.loggers.CSVLogger(
+        #     save_dir="logs",
+        #     name=experiment_name
+        # )
+        logger = TensorBoardLogger(name="vit_siim",save_dir="logs")
         refresh_rate = 1
     net = Net(args)
-    trainer = pl.Trainer(precision=args.precision,fast_dev_run=args.dry_run, gpus=args.gpus, benchmark=args.benchmark, logger=logger, max_epochs=2)
+    trainer = pl.Trainer(precision=args.precision,fast_dev_run=args.dry_run, gpus=args.gpus, benchmark=args.benchmark,logger=logger, max_epochs=args.max_epochs)
     trainer.fit(model=net, train_dataloader=train_dl, val_dataloaders=test_dl)
     if not args.dry_run:
         model_path = f"weights/{experiment_name}.pth"
