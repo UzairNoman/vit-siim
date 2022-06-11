@@ -13,6 +13,9 @@ import seaborn as sns
 from utils import get_model, get_dataset, get_experiment_name, get_criterion
 from da import CutMix, MixUp
 from pytorch_lightning.loggers import TensorBoardLogger
+from sklearn import metrics
+from sklearn.metrics import roc_curve
+from sklearn.metrics import auc
 class Settings:
     def __init__(self):
         self.dataset = "siim"
@@ -113,8 +116,8 @@ class Net(pl.LightningModule):
             #self._log_image(img.clone().detach().cpu())
 
         acc = torch.eq(out.argmax(-1), label).float().mean()
-        auc = metrics.roc_auc_score(label, out[:, 1].squeeze())
-        self.log('auc', auc, on_step=True, on_epoch=True)
+        auc_score = metrics.roc_auc_score(label, out[:, 1].squeeze().detach().numpy())
+        self.log('auc', auc_score, on_step=True, on_epoch=True)
         self.log('acc', acc, on_step=True, on_epoch=True)
         self.log('loss', loss,on_step=True, on_epoch=True)
         return loss
@@ -131,13 +134,23 @@ class Net(pl.LightningModule):
         #self.log("val_loss", loss)
         #self.log("val_acc", acc)
 
-        auc = metrics.roc_auc_score(label, out[:, 1].squeeze())
-        self.log('auc', auc, on_step=True, on_epoch=True)
+        auc_score = metrics.roc_auc_score(label, out[:, 1].squeeze())
+        self.log('auc', auc_score, on_step=True, on_epoch=True)
         val_acc = torchmetrics.functional.accuracy(out[:, 1], label)
         self.log('valid_acc_from_tmet', val_acc, on_step=True, on_epoch=True)
         self.log('valid_acc', acc, on_step=True, on_epoch=True)
         self.log('val_loss', loss,on_step=True, on_epoch=True)
 
+        fpr, tpr, thresholds = roc_curve(label, out[:, 1])
+        auc_rf = auc(fpr, tpr)
+        plt.figure(1)
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.plot(fpr, tpr, label='Vit (area = {:.3f})'.format(auc_rf))
+        plt.xlabel('False positive rate')
+        plt.ylabel('True positive rate')
+        plt.title('ROC curve')
+        plt.legend(loc='best')
+        self.logger.experiment.add_figure('AUC Curve', plt.gcf(), self.current_epoch)
 
         return { 'loss': loss.item(), 'preds': out, 'target': label}
 
@@ -150,8 +163,20 @@ class Net(pl.LightningModule):
         plt.figure(figsize = (args.num_classes,args.num_classes*2))
         fig_ = sns.heatmap(df_cm, annot=True, cmap='Spectral').get_figure()
         plt.close(fig_)
-
+        
         self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
+
+        fpr, tpr, thresholds = roc_curve(targets, preds[:, 1])
+        auc_rf = auc(fpr, tpr)
+        plt.figure(1)
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.plot(fpr, tpr, label='Vit (area = {:.3f})'.format(auc_rf))
+        plt.xlabel('False positive rate')
+        plt.ylabel('True positive rate')
+        plt.title('ROC/AUC curve')
+        plt.legend(loc='best')
+        self.logger.experiment.add_figure('ROC/AUC Curve', plt.gcf(), self.current_epoch)
+
         # repo_root = os.path.abspath(os.getcwd())
         # data_root = os.path.join(repo_root, "logs")
         # list_of_files = glob.glob(f'{data_root}/*') # * means all if need specific format then *.csv
