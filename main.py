@@ -116,7 +116,7 @@ class Net(pl.LightningModule):
             #self._log_image(img.clone().detach().cpu())
 
         acc = torch.eq(out.argmax(-1), label).float().mean()
-        auc_score = metrics.roc_auc_score(label, out[:, 1].squeeze().detach().numpy())
+        auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].cpu().squeeze().detach().numpy())
         self.log('auc', auc_score, on_step=True, on_epoch=True)
         self.log('acc', acc, on_step=True, on_epoch=True)
         self.log('loss', loss,on_step=True, on_epoch=True)
@@ -134,14 +134,14 @@ class Net(pl.LightningModule):
         #self.log("val_loss", loss)
         #self.log("val_acc", acc)
 
-        auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].squeeze())
+        auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].cpu().squeeze().detach().numpy())
         self.log('auc', auc_score, on_step=True, on_epoch=True)
         val_acc = torchmetrics.functional.accuracy(out[:, 1], label)
         self.log('valid_acc_from_tmet', val_acc, on_step=True, on_epoch=True)
         self.log('valid_acc', acc, on_step=True, on_epoch=True)
         self.log('val_loss', loss,on_step=True, on_epoch=True)
 
-        fpr, tpr, thresholds = roc_curve(label, out[:, 1])
+        fpr, tpr, thresholds = roc_curve(label.cpu(), out[:, 1].cpu())
         auc_rf = auc(fpr, tpr)
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
@@ -166,7 +166,7 @@ class Net(pl.LightningModule):
         
         self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
 
-        fpr, tpr, thresholds = roc_curve(targets, preds[:, 1])
+        fpr, tpr, thresholds = roc_curve(targets.cpu(), preds[:, 1].cpu())
         auc_rf = auc(fpr, tpr)
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
