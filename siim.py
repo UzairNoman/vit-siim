@@ -33,22 +33,22 @@ class SIIM(Dataset):
         data_path = os.path.join(directory, "train.csv")
         meta_df = pd.read_csv(data_path, sep=',')
 
-        #do we want to apply stratification here?
-        train, val, test = np.split(meta_df.sample(frac=1, random_state=seed), 
-                                        [int(split*meta_df.shape[0]), int(((1.0-split)/2.0+split)*meta_df.shape[0])])
+        
 
         #(23188, 8)
-        trueRows = train[train['target'] == 1]
-        falseRows = train[train['target'] == 0]
+        trueRows = meta_df[meta_df['target'] == 1]
+        falseRows = meta_df[meta_df['target'] == 0]
         replicas = pd.concat([trueRows]*(math.ceil(23188/400)))
         
         oversampled = falseRows.append(replicas[:22788], ignore_index=True)
 
-
+        #do we want to apply stratification here?
+        train, val, test = np.split(oversampled.sample(frac=1, random_state=seed), 
+                                        [int(split*oversampled.shape[0]), int(((1.0-split)/2.0+split)*oversampled.shape[0])])
 
 
         ############### this here needs to go
-        '''
+  
         if purpose=='train':
             return ['ISIC_0015719','ISIC_0052212','ISIC_0068279','ISIC_0074268',
             'ISIC_0074311','ISIC_0074542','ISIC_0075663','ISIC_0075914',
