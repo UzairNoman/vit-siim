@@ -134,7 +134,7 @@ class Net(pl.LightningModule):
         #self.log("val_loss", loss)
         #self.log("val_acc", acc)
 
-        auc_score = metrics.roc_auc_score(label, out[:, 1].squeeze())
+        auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].squeeze())
         self.log('auc', auc_score, on_step=True, on_epoch=True)
         val_acc = torchmetrics.functional.accuracy(out[:, 1], label)
         self.log('valid_acc_from_tmet', val_acc, on_step=True, on_epoch=True)
