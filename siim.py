@@ -48,7 +48,7 @@ class SIIM(Dataset):
 
 
         ############### this here needs to go
-  
+        '''
         if purpose=='train':
             return ['ISIC_0015719','ISIC_0052212','ISIC_0068279','ISIC_0074268',
             'ISIC_0074311','ISIC_0074542','ISIC_0075663','ISIC_0075914',
@@ -90,15 +90,35 @@ class SIIM(Dataset):
                 'ISIC_0089569',
                 'ISIC_0089738',
                 'ISIC_0090279'], [0,0,1,0,0,0,0,1,0,0,0,1,0,0,0]
+        elif purpose=='test':
+            return [
+                'ISIC_0085172',
+                'ISIC_0085718',
+                'ISIC_0085902',
+                'ISIC_0086349',
+                'ISIC_0086462',
+                'ISIC_0086632',
+                'ISIC_0086709',
+                'ISIC_0087290',
+                'ISIC_0087297',
+                'ISIC_0088137',
+                'ISIC_0088489',
+                'ISIC_0089401',
+                'ISIC_0089569',
+                'ISIC_0089738',
+                'ISIC_0090279'], []
         '''
         ######################
 
         if purpose=='train':
-            return oversampled['image_name'].tolist(), oversampled['target'].tolist()
+            return train['image_name'].tolist(), train['target'].tolist()
         elif purpose=='val':
             return val['image_name'].tolist(), val['target'].tolist()
         elif purpose=='test':
-            return test['image_name'].tolist(), test['target'].tolist()
+            data_path = os.path.join(directory, "test.csv")
+            test_df = pd.read_csv(data_path, sep=',')
+
+            return test_df['image_name'].tolist(), []
 
 
     def __len__(self):
@@ -112,8 +132,10 @@ class SIIM(Dataset):
             {"image": <i-th image>,                                              #
              "label": <label of i-th image>} 
         """
-
-        img_root = os.path.join(self.root_path, f"jpeg/train/{self.images[index]}.jpg")
+        if self.purpose == 'test':
+            img_root = os.path.join(self.root_path, f"jpeg/test/{self.images[index]}.jpg")
+        else:
+            img_root = os.path.join(self.root_path, f"jpeg/train/{self.images[index]}.jpg")
         
         #img = Image.open(img_root)
         #trans = transforms.ToTensor()
@@ -123,8 +145,10 @@ class SIIM(Dataset):
         img = img.float()
         if self.transforms is not None:
             img = self.transforms(img)
-
-        return img, self.labels[index]
+        if self.purpose == 'test':
+            return img
+        else:
+            return img, self.labels[index]
         return img, torch.tensor([self.labels[index]])
 
 

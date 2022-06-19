@@ -112,8 +112,8 @@ def get_dataset(args):
         args.num_classes=2
         args.size = 32
         args.padding = 4
-        root = f'{root}/siim'
-        #root = f'/home/ra49tad2/cv_attention/data/siim'
+        #root = f'{root}/siim'
+        root = f'/home/ra49tad2/cv_attention/data/siim'
         args.mean, args.std = [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]
         train_transform, test_transform = get_transform(args)
         
