@@ -7,6 +7,7 @@ from criterions import LabelSmoothingCrossEntropyLoss
 from da import RandomCropPaste
 from siim import SIIM
 from transforms import Resizeit
+from cnn_embedding import CNNEmbedder
 
 def get_criterion(args):
     if args.criterion=="ce":
@@ -37,6 +38,29 @@ def get_model(args):
             head=args.head,
             is_cls_token=args.is_cls_token
             )
+    elif args.model_name == 'vit_emb':
+        from vit_embedded import ViTEmbedded
+        args.in_c = 3
+        args.num_classes=2
+        args.size = 8
+        args.padding = 4
+        net = ViTEmbedded(args.in_c, 
+            args.num_classes, 
+            img_size=args.size, 
+            patch=8, 
+            dropout=args.dropout, 
+            mlp_hidden=args.mlp_hidden,
+            num_layers=args.num_layers,
+            hidden=args.hidden,
+            head=args.head,
+            is_cls_token=args.is_cls_token)
+    elif args.model_name == 'cnn':
+        hparams = {
+            'batch_size': 8,
+            'learning_rate': 1e-2,
+            'epochs': 1
+        }
+        net = CNNEmbedder(hparams=hparams)
     else:
         raise NotImplementedError(f"{args.model_name} is not implemented yet...")
 
