@@ -2,26 +2,18 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision
 import pytorch_lightning as pl
-import warmup_scheduler
 import numpy as np
 import pandas as pd
-import torchmetrics
-import matplotlib.pyplot as plt
-import seaborn as sns
 from utils import get_model, get_dataset, get_experiment_name, get_criterion
-from da import CutMix, MixUp
 from pytorch_lightning.loggers import TensorBoardLogger
-from sklearn import metrics
-from sklearn.metrics import roc_curve
-from sklearn.metrics import auc
 from net import Net
+
 class Settings:
     def __init__(self):
         self.dataset = "siim"
         self.num_classes = 2
-        self.model_name = "vit"
+        self.model_name = "vit_emb"
         self.patch = 8
         self.batch_size = 128
         self.eval_batch_size = 1024
@@ -91,13 +83,15 @@ if __name__ == "__main__":
         #     save_dir="logs",
         #     name=experiment_name
         # )
-        logger = TensorBoardLogger(name="vit_siim",save_dir="logs")
+        logger = TensorBoardLogger(name="vit_emb_siim",save_dir="logs")
         refresh_rate = 1
+    args.model_name = 'vit_emb'
+    args.experiment_name = 'vit_emb_siim'
     net = Net(args)
     trainer = pl.Trainer(precision=args.precision,fast_dev_run=args.dry_run, gpus=args.gpus, benchmark=args.benchmark,logger=logger, max_epochs=args.max_epochs)
     trainer.fit(model=net, train_dataloader=train_dl, val_dataloaders=test_dl)
     if not args.dry_run:
-        model_path = f"weights/{experiment_name}.pth"
+        model_path = f"weights/{args.experiment_name}.pth"
         torch.save(net.state_dict(), model_path)
         if args.api_key:
-            logger.experiment.log_asset(file_name=experiment_name, file_data=model_path)
+            logger.experiment.log_asset(file_name=args.experiment_name, file_data=model_path)
