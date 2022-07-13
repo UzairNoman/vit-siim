@@ -116,7 +116,7 @@ class SIIM(Dataset):
         ######################
 
         if purpose=='train':
-            return train['image_name'].tolist(), train['target'].tolist()
+            return oversampled['image_name'].tolist(), oversampled['target'].tolist()
         elif purpose=='val':
             return val['image_name'].tolist(), val['target'].tolist()
         elif purpose=='test':
