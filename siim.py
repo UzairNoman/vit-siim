@@ -8,6 +8,7 @@ import pandas as pd
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 import math
+from sklearn.model_selection import train_test_split
 class SIIM(Dataset):
     """SIIM dataset class"""
 
@@ -32,19 +33,23 @@ class SIIM(Dataset):
 
         data_path = os.path.join(directory, "train.csv")
         meta_df = pd.read_csv(data_path, sep=',')
-
+        #(33126, 8)
         
-
-        #(23188, 8)
-        trueRows = meta_df[meta_df['target'] == 1]
-        falseRows = meta_df[meta_df['target'] == 0]
-        replicas = pd.concat([trueRows]*(math.ceil(23188/400)))
-        
-        oversampled = falseRows.append(replicas[:22788], ignore_index=True)
-
+        train, val = train_test_split(meta_df, test_size=split, random_state=seed)
         #do we want to apply stratification here?
-        train, val, test = np.split(oversampled.sample(frac=1, random_state=seed), 
-                                        [int(split*oversampled.shape[0]), int(((1.0-split)/2.0+split)*oversampled.shape[0])])
+        # train, val, test = np.split(meta_df.sample(frac=1, random_state=seed), 
+        #                                 [int(split*meta_df.shape[0]), int(((1.0-split)/2.0+split)*meta_df.shape[0])])
+
+        #train -> 24844
+        #val -> 8282
+        trueRows = train[train['target'] == 1] # 434
+        falseRows = train[train['target'] == 0] # 24410
+        # print(len(trueRows))
+        # print(f" = > {len(falseRows) - len(trueRows)}")
+        trueReplicas = pd.concat([trueRows]*(math.ceil(len(falseRows)/len(trueRows)))) # 434*57 = 24738
+        
+        
+        oversampled = falseRows.append(trueReplicas[:len(falseRows) - len(trueRows)], ignore_index=True) # 24410 + 23976  = 48386
 
 
         ############### this here needs to go
