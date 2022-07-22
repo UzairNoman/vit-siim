@@ -153,7 +153,6 @@ class Attention(nn.Module):
         relative_bias = rearrange(
             relative_bias, '(h w) c -> 1 c h w', h=self.ih*self.iw, w=self.ih*self.iw)
         dots = dots + relative_bias
-
         attn = self.attend(dots)
         out = torch.matmul(attn, v)
         out = rearrange(out, 'b h n d -> b n (h d)')
