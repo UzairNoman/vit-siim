@@ -84,12 +84,12 @@ if __name__ == "__main__":
         )
         refresh_rate = 0
     else:
-        print("[INFO] Log with CSV")
+        print("[INFO] Log with TB")
         # logger = pl.loggers.CSVLogger(
         #     save_dir="logs",
         #     name=experiment_name
         # )
-        logger = TensorBoardLogger(name="vit_siim",save_dir="logs")
+        logger = TensorBoardLogger(name=experiment_name,save_dir="logs")
         refresh_rate = 1
     net = Net(args)
     trainer = pl.Trainer(precision=args.precision,fast_dev_run=args.dry_run, gpus=args.gpus, benchmark=args.benchmark,logger=logger, max_epochs=args.max_epochs)
