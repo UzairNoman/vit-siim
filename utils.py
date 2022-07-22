@@ -61,6 +61,14 @@ def get_model(args):
             'epochs': 1
         }
         net = CNNEmbedder(hparams=hparams)
+    elif args.model_name == 'coat':
+        hparams = {
+            'batch_size': 8,
+            'learning_rate': 1e-2,
+            'epochs': 1
+        }
+        from model.attention.CoAtNet import CoAtNet
+        net = CoAtNet(in_ch=args.in_c,image_size=args.size)
     else:
         raise NotImplementedError(f"{args.model_name} is not implemented yet...")
 
@@ -136,13 +144,13 @@ def get_dataset(args):
         args.num_classes=2
         args.size = 32
         args.padding = 4
-        #root = f'{root}/siim'
-        root = f'/home/ra49tad2/cv_attention/data/siim'
+        root = f'D:\Workspace\cv_attention\data\siim'
+        #root = f'/home/ra49tad2/cv_attention/data/siim'
         args.mean, args.std = [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]
         train_transform, test_transform = get_transform(args)
         
-        train_ds = SIIM(root, purpose='train', seed=args.seed, split=0.7, transforms=train_transform)#, tfm_on_patch=tfm_on_patch)
-        test_ds = SIIM(root, purpose='val', seed=args.seed, split=0.7, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
+        train_ds = SIIM(root, purpose='train', seed=args.seed, split=0.25, transforms=train_transform)#, tfm_on_patch=tfm_on_patch)
+        test_ds = SIIM(root, purpose='val', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
        # train_ds = torchvision.datasets.CIFAR100(root, train=True, transform=train_transform, download=True)
         #test_ds = torchvision.datasets.CIFAR100(root, train=False, transform=test_transform, download=True)
 

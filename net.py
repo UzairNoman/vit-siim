@@ -59,6 +59,7 @@ class Net(pl.LightningModule):
             #self._log_image(img.clone().detach().cpu())
 
         acc = torch.eq(out.argmax(-1), label).float().mean()
+        
         auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].cpu().squeeze().detach().numpy())
         self.log('auc', auc_score, on_step=True, on_epoch=True)
         self.log('acc', acc, on_step=True, on_epoch=True)
@@ -88,7 +89,7 @@ class Net(pl.LightningModule):
         auc_rf = auc(fpr, tpr)
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
-        plt.plot(fpr, tpr, label='Vit (area = {:.3f})'.format(auc_rf))
+        plt.plot(fpr, tpr, label='{} (area = {:.3f})'.format(auc_rf,self.hparams.model_name))
         plt.xlabel('False positive rate')
         plt.ylabel('True positive rate')
         plt.title('ROC curve')
@@ -113,7 +114,7 @@ class Net(pl.LightningModule):
         auc_rf = auc(fpr, tpr)
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
-        plt.plot(fpr, tpr, label='Vit (area = {:.3f})'.format(auc_rf))
+        plt.plot(fpr, tpr, label='{} (area = {:.3f})'.format(auc_rf,self.hparams.model_name))
         plt.xlabel('False positive rate')
         plt.ylabel('True positive rate')
         plt.title('ROC/AUC curve')
