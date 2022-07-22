@@ -94,8 +94,8 @@ def get_transform(args):
             print(f"No AutoAugment for {args.dataset}")
 
     if args.dataset == 'siim':
-        train_transform += [transforms.Resize(size=(32, 32))] 
-        test_transform += [transforms.Resize(size=(32, 32))] 
+        train_transform += [transforms.Resize(size=(args.size, args.size))] 
+        test_transform += [transforms.Resize(size=(args.size, args.size))] 
     else:
         train_transform.append(transforms.ToTensor())
         test_transform.append(transforms.ToTensor())
@@ -144,7 +144,7 @@ def get_dataset(args):
     elif args.dataset == "siim":
         args.in_c = 3
         args.num_classes=2
-        args.size = 32
+        args.size = 224
         args.padding = 4
         #root = f'D:\Workspace\cv_attention\data\siim'
         root = f'/home/ra49tad2/cv_attention/data/siim'

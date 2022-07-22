@@ -89,7 +89,7 @@ class Net(pl.LightningModule):
         auc_rf = auc(fpr, tpr)
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
-        plt.plot(fpr, tpr, label='{} (area = {:.3f})'.format(auc_rf,self.hparams.model_name))
+        plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))
         plt.xlabel('False positive rate')
         plt.ylabel('True positive rate')
         plt.title('ROC curve')
@@ -114,7 +114,8 @@ class Net(pl.LightningModule):
         auc_rf = auc(fpr, tpr)
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
-        plt.plot(fpr, tpr, label='{} (area = {:.3f})'.format(auc_rf,self.hparams.model_name))
+        print
+        plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))
         plt.xlabel('False positive rate')
         plt.ylabel('True positive rate')
         plt.title('ROC/AUC curve')
