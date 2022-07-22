@@ -67,8 +67,10 @@ def get_model(args):
             'learning_rate': 1e-2,
             'epochs': 1
         }
-        from model.attention.CoAtNet import CoAtNet
-        net = CoAtNet(in_ch=args.in_c,image_size=args.size)
+        from model.coatnet import coatnet_0
+        net = coatnet_0()
+        num_ftrs = net.fc.in_features
+        net.fc = nn.Linear(num_ftrs, args.num_classes)
     else:
         raise NotImplementedError(f"{args.model_name} is not implemented yet...")
 
