@@ -60,7 +60,10 @@ class Net(pl.LightningModule):
 
         acc = torch.eq(out.argmax(-1), label).float().mean()
         
-        auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].cpu().squeeze().detach().numpy())
+        try:
+            auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].cpu().squeeze().detach().numpy())
+        except ValueError:
+            auc_score = 0
         self.log('auc', auc_score, on_step=True, on_epoch=True)
         self.log('acc', acc, on_step=True, on_epoch=True)
         self.log('loss', loss,on_step=True, on_epoch=True)
@@ -78,7 +81,10 @@ class Net(pl.LightningModule):
         #self.log("val_loss", loss)
         #self.log("val_acc", acc)
 
-        auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].cpu().squeeze().detach().numpy())
+        try:
+            auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].cpu().squeeze().detach().numpy())
+        except ValueError:
+            auc_score = 0
         self.log('auc', auc_score, on_step=True, on_epoch=True)
         val_acc = torchmetrics.functional.accuracy(out[:, 1], label)
         self.log('valid_acc_from_tmet', val_acc, on_step=True, on_epoch=True)
