@@ -52,9 +52,10 @@ class Net(pl.LightningModule):
             loss = self.criterion(out, label)*lambda_ + self.criterion(out, rand_label)*(1.-lambda_)
         else:
             out = self(img)
-
+            # visualizer = ROCAUC(self.model, classes=["win", "loss", "draw","asfa","asdfsad","Saf","gd"])
             if(self.hparams.criterion == "ce"):
                 out, label = out.float(), label.long()
+                acc = 0
             else:
                 out, label = out[:, 1], label.float()
 
@@ -64,7 +65,8 @@ class Net(pl.LightningModule):
             self.log_image_flag = True
             #self._log_image(img.clone().detach().cpu())
 
-        acc = torch.eq(out, label).float().mean()
+        
+        acc = torch.eq(out.argmax(-1), label).float().mean()
         
         try:
             auc_score = metrics.roc_auc_score(label.cpu(), out.cpu().squeeze().detach().numpy())
@@ -84,8 +86,10 @@ class Net(pl.LightningModule):
         out = self(img)
         if(self.hparams.criterion == "ce"):
             out, label = out.float(), label.long()
+            # self.plot_multiclass_auc(out,label)
         else:
             out, label = out[:, 1], label.float()
+            self.plot_binary_auc(out,label)
 
         loss = self.criterion(out, label)
         acc = torch.eq(out.argmax(-1), label).float().mean()
@@ -102,18 +106,23 @@ class Net(pl.LightningModule):
         self.log('valid_acc', acc, on_step=True, on_epoch=True)
         self.log('val_loss', loss,on_step=True, on_epoch=True)
 
-        fpr, tpr, thresholds = roc_curve(label.cpu(), out.cpu())
-        auc_rf = auc(fpr, tpr)
-        plt.figure(1)
-        plt.plot([0, 1], [0, 1], 'k--')
-        plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))
-        plt.xlabel('False positive rate')
-        plt.ylabel('True positive rate')
-        plt.title('ROC curve')
-        plt.legend(loc='best')
-        self.logger.experiment.add_figure('AUC Curve', plt.gcf(), self.current_epoch)
+        
 
         return { 'loss': loss.item(), 'preds': out, 'target': label}
+    
+    def plot_binary_auc(self, out,label, text="AUC Curve"):
+            fpr, tpr, thresholds = roc_curve(label.cpu(), out.cpu())
+            auc_rf = auc(fpr, tpr)
+            plt.figure(1)
+            plt.plot([0, 1], [0, 1], 'k--')
+            plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))
+            plt.xlabel('False positive rate')
+            plt.ylabel('True positive rate')
+            plt.title(text)
+            plt.legend(loc='best')
+            self.logger.experiment.add_figure(text, plt.gcf(), self.current_epoch)
+    # def plot_multiclass_auc(out,label):
+
 
     def validation_epoch_end(self, outputs):
         preds = torch.cat([tmp['preds'] for tmp in outputs])
@@ -127,17 +136,9 @@ class Net(pl.LightningModule):
         
         self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
 
-        fpr, tpr, thresholds = roc_curve(targets.cpu(), preds.cpu())
-        auc_rf = auc(fpr, tpr)
-        plt.figure(1)
-        plt.plot([0, 1], [0, 1], 'k--')
-        print
-        plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))
-        plt.xlabel('False positive rate')
-        plt.ylabel('True positive rate')
-        plt.title('ROC/AUC curve')
-        plt.legend(loc='best')
-        self.logger.experiment.add_figure('ROC/AUC Curve', plt.gcf(), self.current_epoch)
+        if(self.hparams.criterion == "bce"):
+            self.plot_binary_auc(preds, targets, "ROC/AUC Curve")
+
 
         # repo_root = os.path.abspath(os.getcwd())
         # data_root = os.path.join(repo_root, "logs")

@@ -17,8 +17,8 @@ from sklearn.metrics import auc
 from net import Net
 class Settings:
     def __init__(self):
-        self.dataset = "siim"
-        self.num_classes = 2
+        self.dataset = "ham"#"siim"
+        self.num_classes = 7#2
         self.model_name = "coat"
         self.patch = 8
         self.batch_size = 128
@@ -27,11 +27,11 @@ class Settings:
         self.min_lr = 1e-5
         self.beta1 = 0.9
         self.beta2 = 0.999
-        self.max_epochs = 20
+        self.max_epochs = 3
         self.weight_decay = 5e-5
         self.warmup_epoch = 5
         self.precision = 16
-        self.criterion = "bce"
+        self.criterion = "ce"#"bce"
         self.smoothing = 0.1
         self.dropout = 0.0
         self.head = 12

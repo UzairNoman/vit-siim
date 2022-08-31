@@ -37,11 +37,9 @@ class HAM(Dataset):
         # meta_df.rename(columns={'image_id': 'image_name'})
         meta_df['target'] = pd.Categorical(meta_df['dx']).codes
         no_of_classes = meta_df['target'].unique()
-        print(f'No. of Class in HAM: {no_of_classes}')
+        # print(f'No. of Class in HAM: {no_of_classes}')
         meta_df['image_name'] = meta_df.apply(lambda row: self.extract_path_img(directory,row.image_id), axis=1)
-        print(meta_df.head())
 
-        
     
         #(33126, 8)
         
