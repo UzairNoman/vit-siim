@@ -22,7 +22,7 @@ class Settings:
         self.model_name = "coat"
         self.patch = 8
         self.batch_size = 128
-        self.eval_batch_size = 1024
+        self.eval_batch_size = 64 #1024
         self.lr = 1e-3
         self.min_lr = 1e-5
         self.beta1 = 0.9
@@ -31,7 +31,7 @@ class Settings:
         self.weight_decay = 5e-5
         self.warmup_epoch = 5
         self.precision = 16
-        self.criterion = "ce"
+        self.criterion = "bce"
         self.smoothing = 0.1
         self.dropout = 0.0
         self.head = 12

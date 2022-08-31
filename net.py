@@ -52,16 +52,22 @@ class Net(pl.LightningModule):
             loss = self.criterion(out, label)*lambda_ + self.criterion(out, rand_label)*(1.-lambda_)
         else:
             out = self(img)
-            loss = self.criterion(out[:,1], label.float())
+
+            if(self.hparams.criterion == "ce"):
+                out, label = out.float(), label.long()
+            else:
+                out, label = out[:, 1], label.float()
+
+            loss = self.criterion(out, label)
 
         if not self.log_image_flag and not self.hparams.dry_run:
             self.log_image_flag = True
             #self._log_image(img.clone().detach().cpu())
 
-        acc = torch.eq(out.argmax(-1), label).float().mean()
+        acc = torch.eq(out, label).float().mean()
         
         try:
-            auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].cpu().squeeze().detach().numpy())
+            auc_score = metrics.roc_auc_score(label.cpu(), out.cpu().squeeze().detach().numpy())
         except ValueError:
             auc_score = 0
         self.log('auc', auc_score, on_step=True, on_epoch=True)
@@ -76,22 +82,27 @@ class Net(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         img, label = batch
         out = self(img)
-        loss = self.criterion(out[:,1], label.float())
+        if(self.hparams.criterion == "ce"):
+            out, label = out.float(), label.long()
+        else:
+            out, label = out[:, 1], label.float()
+
+        loss = self.criterion(out, label)
         acc = torch.eq(out.argmax(-1), label).float().mean()
         #self.log("val_loss", loss)
         #self.log("val_acc", acc)
 
         try:
-            auc_score = metrics.roc_auc_score(label.cpu(), out[:, 1].cpu().squeeze().detach().numpy())
+            auc_score = metrics.roc_auc_score(label.cpu(), out.cpu().squeeze().detach().numpy())
         except ValueError:
             auc_score = 0
         self.log('auc', auc_score, on_step=True, on_epoch=True)
-        val_acc = torchmetrics.functional.accuracy(out[:, 1], label)
+        val_acc = torchmetrics.functional.accuracy(out, label.long())
         self.log('valid_acc_from_tmet', val_acc, on_step=True, on_epoch=True)
         self.log('valid_acc', acc, on_step=True, on_epoch=True)
         self.log('val_loss', loss,on_step=True, on_epoch=True)
 
-        fpr, tpr, thresholds = roc_curve(label.cpu(), out[:, 1].cpu())
+        fpr, tpr, thresholds = roc_curve(label.cpu(), out.cpu())
         auc_rf = auc(fpr, tpr)
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
@@ -107,7 +118,7 @@ class Net(pl.LightningModule):
     def validation_epoch_end(self, outputs):
         preds = torch.cat([tmp['preds'] for tmp in outputs])
         targets = torch.cat([tmp['target'] for tmp in outputs])
-        confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets, num_classes=self.hparams.num_classes)
+        confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets.long(), num_classes=self.hparams.num_classes)
 
         df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index = range(self.hparams.num_classes), columns=range(self.hparams.num_classes))
         plt.figure(figsize = (self.hparams.num_classes,self.hparams.num_classes*2))
@@ -116,7 +127,7 @@ class Net(pl.LightningModule):
         
         self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
 
-        fpr, tpr, thresholds = roc_curve(targets.cpu(), preds[:, 1].cpu())
+        fpr, tpr, thresholds = roc_curve(targets.cpu(), preds.cpu())
         auc_rf = auc(fpr, tpr)
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')

@@ -44,9 +44,11 @@ class SIIM(Dataset):
         #val -> 8282
         trueRows = train[train['target'] == 1] # 434
         falseRows = train[train['target'] == 0] # 24410
-        # print(len(trueRows))
-        # print(f" = > {len(falseRows) - len(trueRows)}")
+        # # print(len(trueRows))
+        # # print(f" = > {len(falseRows) - len(trueRows)}")
         trueReplicas = pd.concat([trueRows]*(math.ceil(len(falseRows)/len(trueRows)))) # 434*57 = 24738
+
+
         
         
         oversampled = falseRows.append(trueReplicas[:len(falseRows) - len(trueRows)], ignore_index=True) # 24410 + 23976  = 48386
@@ -129,7 +131,8 @@ class SIIM(Dataset):
     def __len__(self):
         """Return number of images in the dataset"""
         return(len(self.images))
-
+        
+    def get_labels(self): return self.labels
 
     def __getitem__(self, index):
         """
@@ -147,9 +150,32 @@ class SIIM(Dataset):
         #img = trans(img)
         #img = torchvision.io.read_image(img_root)
         img = read_image(img_root)
-        img = img.float()
         if self.transforms is not None:
             img = self.transforms(img)
+
+
+        if self.labels[index] == 1:
+            transformForReplicas = transforms.RandomChoice([
+                transforms.RandomHorizontalFlip(), 
+                transforms.RandomVerticalFlip(),
+                transforms.RandomAutocontrast(),
+                transforms.RandomAdjustSharpness(sharpness_factor=2),
+                transforms.RandomEqualize()
+            ])
+
+            transformForReplicas2 = transforms.RandomChoice([
+                transforms.ColorJitter(brightness=.5, hue=.3),
+                transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)),
+                transforms.RandomRotation(degrees=(0, 180)),
+                transforms.RandomPosterize(bits=2),
+                
+            ])
+
+            img = transformForReplicas(img)
+            img = transformForReplicas2(img)
+        img = img.float()
+
+        
         if self.purpose == 'test':
             return img
         else:

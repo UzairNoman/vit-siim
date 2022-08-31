@@ -1,3 +1,4 @@
+from ast import arg
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
@@ -8,16 +9,19 @@ from da import RandomCropPaste
 from siim import SIIM
 from transforms import Resizeit
 from cnn_embedding import CNNEmbedder
+from ham import HAM
 
 def get_criterion(args):
     if args.criterion=="ce":
         if args.label_smoothing:
             criterion = LabelSmoothingCrossEntropyLoss(args.num_classes, smoothing=args.smoothing)
         else:
-            #criterion = nn.CrossEntropyLoss()
-            pos_weight  = 32542 / 584
-            pos_weight = torch.as_tensor(pos_weight, dtype=torch.float)
-            criterion = nn.BCEWithLogitsLoss(pos_weight= pos_weight)
+            criterion = nn.CrossEntropyLoss()
+    elif args.criterion=="bce":
+        # pos_weight  = 32542 / 584
+        # pos_weight = torch.as_tensor(pos_weight, dtype=torch.float)
+        # criterion = nn.BCEWithLogitsLoss(pos_weight= pos_weight)
+        criterion = nn.BCEWithLogitsLoss()
     else:
         raise ValueError(f"{args.criterion}?")
 
@@ -93,7 +97,7 @@ def get_transform(args):
         else:
             print(f"No AutoAugment for {args.dataset}")
 
-    if args.dataset == 'siim':
+    if args.dataset == 'siim' or args.dataset == 'ham':
         train_transform += [transforms.Resize(size=(args.size, args.size))] 
         test_transform += [transforms.Resize(size=(args.size, args.size))] 
     else:
@@ -103,14 +107,14 @@ def get_transform(args):
 
     train_transform += [
         #transforms.ToTensor(),
-        transforms.Normalize(mean=args.mean, std=args.std)
+        # transforms.Normalize(mean=args.mean, std=args.std)
     ]
     # if args.rcpaste:
     #     train_transform += [RandomCropPaste(size=args.size)]
     
     test_transform += [
         #transforms.ToTensor(),
-        transforms.Normalize(mean=args.mean, std=args.std)
+        # transforms.Normalize(mean=args.mean, std=args.std)
     ]
 
     train_transform = transforms.Compose(train_transform)
@@ -147,10 +151,9 @@ def get_dataset(args):
         args.size = 224
         args.padding = 4
         #root = f'D:\Workspace\cv_attention\data\siim'
-        root = f'/home/ra49tad2/cv_attention/data/siim'
+        root = f'/dss/dssmcmlfs01/pn69za/pn69za-dss-0002/ra49tad2/cv_attention/data/siim'
         args.mean, args.std = [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]
         train_transform, test_transform = get_transform(args)
-        
         train_ds = SIIM(root, purpose='train', seed=args.seed, split=0.25, transforms=train_transform)#, tfm_on_patch=tfm_on_patch)
         test_ds = SIIM(root, purpose='val', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
        # train_ds = torchvision.datasets.CIFAR100(root, train=True, transform=train_transform, download=True)
@@ -165,6 +168,17 @@ def get_dataset(args):
         train_transform, test_transform = get_transform(args)
         train_ds = torchvision.datasets.SVHN(root, split="train",transform=train_transform, download=True)
         test_ds = torchvision.datasets.SVHN(root, split="test", transform=test_transform, download=True)
+
+    elif args.dataset == "ham":
+        args.in_c = 3
+        args.num_classes=7
+        args.size = 224
+        args.padding = 4
+        root = f'/dss/dssmcmlfs01/pn69za/pn69za-dss-0002/ra49tad2/data/ham'
+        args.mean, args.std = [0.4377, 0.4438, 0.4728], [0.1980, 0.2010, 0.1970]
+        train_transform, test_transform = get_transform(args)
+        train_ds = HAM(root, purpose='train', seed=args.seed, split=0.25, transforms=train_transform)#, tfm_on_patch=tfm_on_patch)
+        test_ds = HAM(root, purpose='val', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
 
     else:
         raise NotImplementedError(f"{args.dataset} is not implemented yet.")
