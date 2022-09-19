@@ -144,7 +144,6 @@ def get_dataset(args):
         train_transform, test_transform = get_transform(args)
         train_ds = torchvision.datasets.CIFAR100(root, train=True, transform=train_transform, download=True)
         test_ds = torchvision.datasets.CIFAR100(root, train=False, transform=test_transform, download=True)
-    
     elif args.dataset == "siim":
         args.in_c = 3
         args.num_classes=2
