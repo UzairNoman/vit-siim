@@ -19,7 +19,7 @@ class HAM(Dataset):
         self.split = split
         self.img_part1 = os.listdir(f'{root}/HAM10000_images_part_1/')
         self.img_part2 = os.listdir(f'{root}/HAM10000_images_part_2/')
-        self.images, self.labels = self._make_dataset(directory=self.root_path, purpose=self.purpose, seed=self.seed, split=self.split)
+        self.images, self.labels, self.most_popular_idx = self._make_dataset(directory=self.root_path, purpose=self.purpose, seed=self.seed, split=self.split)
         self.transforms = transforms
         self.tfm_on_patch = tfm_on_patch
 
@@ -37,7 +37,7 @@ class HAM(Dataset):
         # meta_df.rename(columns={'image_id': 'image_name'})
         meta_df['target'] = pd.Categorical(meta_df['dx']).codes
         no_of_classes = meta_df['target'].unique()
-        # print(f'No. of Class in HAM: {no_of_classes}')
+        #print(f'No. of Class in HAM: {no_of_classes}')
         meta_df['image_name'] = meta_df.apply(lambda row: self.extract_path_img(directory,row.image_id), axis=1)
 
     
@@ -56,21 +56,31 @@ class HAM(Dataset):
         # # # print(f" = > {len(falseRows) - len(trueRows)}")
         # trueReplicas = pd.concat([trueRows]*(math.ceil(len(falseRows)/len(trueRows)))) # 434*57 = 24738
 
-
-        
+        #print(train['target'])
+        most_popular_count = train['target'].value_counts().max()
+        most_popular_idx = train['target'].value_counts().idxmax()
+        oversampled = train[train['target'] == most_popular_idx]
+        #print(most_popular_idx)
+        #print(most_popular_count)
+        for i in range(0,7):
+            if most_popular_idx != i:
+                to_be_replicated = train[train['target'] == i]
+                replicas = pd.concat([to_be_replicated]*(math.ceil(most_popular_count/len(to_be_replicated))))
+                oversampled = oversampled.append(replicas[:most_popular_count - len(to_be_replicated)], ignore_index=True)
+        #print(oversampled['target'].value_counts())
         
         # oversampled = falseRows.append(trueReplicas[:len(falseRows) - len(trueRows)], ignore_index=True) # 24410 + 23976  = 48386
         ######################
 
         if purpose=='train':
-            return train['image_name'].tolist(), train['target'].tolist()
+            return oversampled['image_name'].tolist(), oversampled['target'].tolist(), most_popular_idx
         elif purpose=='val':
-            return val['image_name'].tolist(), val['target'].tolist()
+            return val['image_name'].tolist(), val['target'].tolist(), most_popular_idx
         elif purpose=='test':
             data_path = os.path.join(directory, "test.csv")
             test_df = pd.read_csv(data_path, sep=',')
 
-            return test_df['image_name'].tolist(), []
+            return test_df['image_name'].tolist(), [], most_popular_idx
 
     def extract_path_img(self,directory,x):
         file = x + '.jpg'
@@ -105,7 +115,7 @@ class HAM(Dataset):
             img = self.transforms(img)
 
 
-        if self.labels[index] == 1:
+        if self.labels[index] != self.most_popular_idx:
             transformForReplicas = transforms.RandomChoice([
                 transforms.RandomHorizontalFlip(), 
                 transforms.RandomVerticalFlip(),
