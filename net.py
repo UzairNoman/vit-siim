@@ -86,7 +86,7 @@ class Net(pl.LightningModule):
         out = self(img)
         if(self.hparams.criterion == "ce"):
             out, label = out.float(), label.long()
-            # self.plot_multiclass_auc(out,label)
+            self.plot_multiclass_auc(out,label)
         else:
             out, label = out[:, 1], label.float()
             self.plot_binary_auc(out,label)
@@ -106,23 +106,32 @@ class Net(pl.LightningModule):
         self.log('valid_acc', acc, on_step=True, on_epoch=True)
         self.log('val_loss', loss,on_step=True, on_epoch=True)
 
-        
-
         return { 'loss': loss.item(), 'preds': out, 'target': label}
     
     def plot_binary_auc(self, out,label, text="AUC Curve"):
-            fpr, tpr, thresholds = roc_curve(label.cpu(), out.cpu())
-            auc_rf = auc(fpr, tpr)
-            plt.figure(1)
-            plt.plot([0, 1], [0, 1], 'k--')
-            plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))
-            plt.xlabel('False positive rate')
-            plt.ylabel('True positive rate')
-            plt.title(text)
-            plt.legend(loc='best')
-            self.logger.experiment.add_figure(text, plt.gcf(), self.current_epoch)
-    # def plot_multiclass_auc(out,label):
+        fpr, tpr, thresholds = roc_curve(label.cpu(), out.cpu())
+        auc_rf = auc(fpr, tpr)
+        plt.figure(1)
+        plt.plot([0, 1], [0, 1], 'k--')
+        plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))
+        plt.xlabel('False positive rate')
+        plt.ylabel('True positive rate')
+        plt.title(text)
+        plt.legend(loc='best')
+        self.logger.experiment.add_figure(text, plt.gcf(), self.current_epoch)
 
+    def plot_multiclass_auc(self, out, label, text="AUC Curve"):
+        tpr,fpr,roc_auc = ([[]]*7 for _ in range(3))
+        f,ax = plt.subplots()
+        for i in range(7):
+            fpr[i], tpr[i], _ = roc_curve(label.cpu()==i, out.cpu()[:, i])
+            roc_auc[i] = auc(fpr[i], tpr[i])
+            ax.plot(fpr[i],tpr[i])
+        plt.legend(['Class {:d}, AUC {}'.format(d, round(roc_auc[d],3)) for d in range(7)])
+        plt.title('{}, {})'.format(text, self.hparams.model_name))
+        plt.xlabel('FPR')
+        plt.ylabel('TPR')
+        self.logger.experiment.add_figure(text, plt.gcf(), self.current_epoch)
 
     def validation_epoch_end(self, outputs):
         preds = torch.cat([tmp['preds'] for tmp in outputs])
