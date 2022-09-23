@@ -15,6 +15,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from sklearn import metrics
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
+from sklearn.metrics import f1_score
 
 class Net(pl.LightningModule):
     def __init__(self, hparams):
@@ -111,12 +112,13 @@ class Net(pl.LightningModule):
     def plot_binary_auc(self, out,label, text="AUC Curve"):
         fpr, tpr, thresholds = roc_curve(label.cpu(), out.cpu())
         auc_rf = auc(fpr, tpr)
+        f1 = f1_score(label.cpu(), torch.round(out.cpu()))
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
         plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))
         plt.xlabel('False positive rate')
         plt.ylabel('True positive rate')
-        plt.title(text)
+        plt.title('{}, F1-Score: {})'.format(text, f1))
         plt.legend(loc='best')
         self.logger.experiment.add_figure(text, plt.gcf(), self.current_epoch)
 
@@ -127,8 +129,9 @@ class Net(pl.LightningModule):
             fpr[i], tpr[i], _ = roc_curve(label.cpu()==i, out.cpu()[:, i])
             roc_auc[i] = auc(fpr[i], tpr[i])
             ax.plot(fpr[i],tpr[i])
+        f1 = f1_score(label.cpu(), torch.argmax(out.cpu(), dim=1), average ='micro')
         plt.legend(['Class {:d}, AUC {}'.format(d, round(roc_auc[d],3)) for d in range(7)])
-        plt.title('{}, {})'.format(text, self.hparams.model_name))
+        plt.title('{}, {}, F1-Score: {})'.format(text, self.hparams.model_name, f1))
         plt.xlabel('FPR')
         plt.ylabel('TPR')
         self.logger.experiment.add_figure(text, plt.gcf(), self.current_epoch)
