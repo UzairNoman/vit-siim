@@ -18,10 +18,10 @@ def get_criterion(args):
         else:
             criterion = nn.CrossEntropyLoss()
     elif args.criterion=="bce":
-        # pos_weight  = 32542 / 584
-        # pos_weight = torch.as_tensor(pos_weight, dtype=torch.float)
-        # criterion = nn.BCEWithLogitsLoss(pos_weight= pos_weight)
-        criterion = nn.BCEWithLogitsLoss()
+        pos_weight  = 32542 / 584
+        pos_weight = torch.as_tensor(pos_weight, dtype=torch.float)
+        criterion = nn.BCEWithLogitsLoss(pos_weight= pos_weight)
+        # criterion = nn.BCEWithLogitsLoss()
     else:
         raise ValueError(f"{args.criterion}?")
 
@@ -46,9 +46,10 @@ def get_model(args):
         from vit_embedded import ViTEmbedded
         args.in_c = 3
         args.num_classes=2
-        args.size = 8
+        args.size = 56
         args.padding = 4
-        net = ViTEmbedded(args.in_c, 
+        net = ViTEmbedded(args,
+            args.in_c, 
             args.num_classes, 
             img_size=args.size, 
             patch=8, 

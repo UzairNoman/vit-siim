@@ -25,7 +25,7 @@ class Settings:
         self.weight_decay = 5e-5
         self.warmup_epoch = 5
         self.precision = 16
-        self.criterion = "ce"
+        self.criterion = "bce"
         self.smoothing = 0.1
         self.dropout = 0.0
         self.head = 12

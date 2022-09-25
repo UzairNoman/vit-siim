@@ -5,43 +5,9 @@ from main import Net
 import os
 
 from layers import TransformerEncoder
-class Settings:
-    def __init__(self):
-        self.dataset = "siim"
-        self.num_classes = 2
-        self.model_name = "vit"
-        self.patch = 8
-        self.batch_size = 128
-        self.eval_batch_size = 1024
-        self.lr = 1e-3
-        self.min_lr = 1e-5
-        self.beta1 = 0.9
-        self.beta2 = 0.999
-        self.max_epochs = 3
-        self.weight_decay = 5e-5
-        self.warmup_epoch = 5
-        self.precision = 16
-        self.criterion = "ce"
-        self.smoothing = 0.1
-        self.dropout = 0.0
-        self.head = 12
-        self.num_layers = 7
-        self.hidden = 384
-        self.label_smoothing = False
-        self.mlp_hidden = 384
-        self.seed = 42
-        self.project_name = "VisionTransformer"
-        self.off_benchmark = False
-        self.dry_run = False
-        self.autoaugment = False
-        self.rcpaste = False
-        self.cutmix = False
-        self.mixup = False
-        self.off_cls_token = False
-        self.api_key = False
 
 class ViTEmbedded(nn.Module):
-    def __init__(self, in_c:int=3, num_classes:int=10, img_size:int=32, patch:int=8, dropout:float=0., num_layers:int=7, hidden:int=384, mlp_hidden:int=384*4, head:int=8, is_cls_token:bool=True):
+    def __init__(self,args_cnn, in_c:int=3, num_classes:int=10, img_size:int=32, patch:int=8, dropout:float=0., num_layers:int=7, hidden:int=384, mlp_hidden:int=384*4, head:int=8, is_cls_token:bool=True):
         super(ViTEmbedded, self).__init__()
         # hidden=384
 
@@ -51,7 +17,7 @@ class ViTEmbedded(nn.Module):
         f = (img_size//self.patch)**2*3 # 48 # patch vec length
         num_tokens = (self.patch**2)+1 if self.is_cls_token else (self.patch**2)
 
-        self.emb = nn.Linear(64, hidden) # (b, n, f)
+        self.emb = nn.Linear(3136, hidden) # (b, n, f)
         self.cls_token = nn.Parameter(torch.randn(1, 1, hidden)) if is_cls_token else None
         self.pos_emb = nn.Parameter(torch.randn(1,num_tokens, hidden))
         enc_list = [TransformerEncoder(hidden,mlp_hidden=mlp_hidden, dropout=dropout, head=head) for _ in range(num_layers)]
@@ -68,24 +34,14 @@ class ViTEmbedded(nn.Module):
         """
 
 
-        args = Settings()
-
-        torch.manual_seed(args.seed)
-        args.benchmark = True if not args.off_benchmark else False
-        args.gpus = torch.cuda.device_count()
-        args.num_workers = 4*args.gpus if args.gpus else 8
-        args.is_cls_token = True if not args.off_cls_token else False
-        if not args.gpus:
-            args.precision=32
-
-        if args.mlp_hidden != args.hidden*4:
-            print(f"[INFO] In original paper, mlp_hidden(CURRENT:{args.mlp_hidden}) is set to: {args.hidden*4}(={args.hidden}*4)")
+        args = args_cnn
         args.model_name = 'cnn'
         args.experiment_name = 'cnn_siim'
         net = Net(args)
 
         net.load_state_dict(torch.load(os.path.join('weights/cnn_siim.pth')), strict=True)
         net.eval()
+        # print(*list(net.model.feature_extractor.children())[:-3]) # torch.Size([1024, 64, 56, 56])
         self.cnn =  nn.Sequential(*list(net.model.feature_extractor.children())[:-3])
 
     def forward(self, x):
@@ -96,10 +52,13 @@ class ViTEmbedded(nn.Module):
         out = self.cnn(x)
         #we need to make sure that the output is fine for _to_words
         """
+        print("ASfdasfa",x.shape)
         out = self.cnn(x)
+        print("out",out.shape)
         #torch.Size([18, 64, 8, 8])
         
         out = self._to_words(out)
+        print("word",out.shape)
         # for VIT
         #([18, 64, 48])
         # for cnn

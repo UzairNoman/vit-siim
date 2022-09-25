@@ -17,7 +17,7 @@ from sklearn.metrics import auc
 from net import Net
 class Settings:
     def __init__(self):
-        self.dataset = "ham"#"siim"
+        self.dataset = "c10"#"siim"
         self.num_classes = 7#2
         self.model_name = "coat"
         self.patch = 8
