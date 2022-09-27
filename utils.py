@@ -18,10 +18,10 @@ def get_criterion(args):
         else:
             criterion = nn.CrossEntropyLoss()
     elif args.criterion=="bce":
-        pos_weight  = 32542 / 584
-        pos_weight = torch.as_tensor(pos_weight, dtype=torch.float)
-        criterion = nn.BCEWithLogitsLoss(pos_weight= pos_weight)
-        # criterion = nn.BCEWithLogitsLoss()
+        # pos_weight  = 32542 / 584
+        # pos_weight = torch.as_tensor(pos_weight, dtype=torch.float)
+        # criterion = nn.BCEWithLogitsLoss(pos_weight= pos_weight)
+        criterion = nn.BCEWithLogitsLoss()
     else:
         raise ValueError(f"{args.criterion}?")
 
@@ -45,8 +45,7 @@ def get_model(args):
     elif args.model_name == 'vit_emb':
         from vit_embedded import ViTEmbedded
         args.in_c = 3
-        args.num_classes=2
-        args.size = 56
+        args.size = 8
         args.padding = 4
         net = ViTEmbedded(args,
             args.in_c, 
@@ -63,17 +62,21 @@ def get_model(args):
         hparams = {
             'batch_size': 8,
             'learning_rate': 1e-2,
-            'epochs': 1
+            'epochs': 1,
         }
-        net = CNNEmbedder(hparams=hparams)
+        print("class",args.num_classes)
+        net = CNNEmbedder(num_classes=args.num_classes,hparams=hparams)
     elif args.model_name == 'coat':
         hparams = {
             'batch_size': 8,
             'learning_rate': 1e-2,
             'epochs': 1
         }
-        from model.coatnet import coatnet_0
-        net = coatnet_0()
+        from model.coatnet import CoAtNet
+        num_blocks = [2, 2, 3, 5, 2]            # L
+        channels = [64, 96, 192, 384, 768]      # D
+        net = CoAtNet((args.size, args.size), 3, num_blocks, channels, num_classes=1000)
+        # net = coatnet_0()
         num_ftrs = net.fc.in_features
         net.fc = nn.Linear(num_ftrs, args.num_classes)
     else:

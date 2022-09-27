@@ -14,18 +14,18 @@ class Settings:
         self.dataset = "siim"
         self.num_classes = 2
         self.model_name = "cnn"
+        self.criterion = "bce"
         self.patch = 8
-        self.batch_size = 128
+        self.batch_size = 64
         self.eval_batch_size = 1024
         self.lr = 1e-3
         self.min_lr = 1e-5
         self.beta1 = 0.9
         self.beta2 = 0.999
-        self.max_epochs = 20
+        self.max_epochs = 2
         self.weight_decay = 5e-5
         self.warmup_epoch = 5
         self.precision = 16
-        self.criterion = "ce"
         self.smoothing = 0.1
         self.dropout = 0.0
         self.head = 12
@@ -63,8 +63,8 @@ train_ds, test_ds = get_dataset(args)
 # train_ds = torch.utils.data.Subset(train_ds, indices)
 # test_ds = torch.utils.data.Subset(test_ds, indices)
 #print(data.shape)
-train_dl = torch.utils.data.DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
-test_dl = torch.utils.data.DataLoader(test_ds, batch_size=args.eval_batch_size, num_workers=args.num_workers, pin_memory=True)
+train_dl = torch.utils.data.DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True,drop_last=True)
+test_dl = torch.utils.data.DataLoader(test_ds, batch_size=args.eval_batch_size, num_workers=args.num_workers, pin_memory=True,drop_last=True)
 
 if __name__ == "__main__":
     experiment_name = get_experiment_name(args)
@@ -78,20 +78,20 @@ if __name__ == "__main__":
         )
         refresh_rate = 0
     else:
-        print("[INFO] Log with CSV")
+        print("[INFO] Log with TB")
         # logger = pl.loggers.CSVLogger(
         #     save_dir="logs",
         #     name=experiment_name
         # )
-        logger = TensorBoardLogger(name="cnn_siim",save_dir="logs")
+        logger = TensorBoardLogger(name=experiment_name,save_dir="logs")
         refresh_rate = 1
-    args.model_name = 'cnn'
-    args.experiment_name = 'cnn_siim'
+    setting_attrs = vars(args)
+    print(', '.join("%s: %s" % item for item in setting_attrs.items()))
     net = Net(args)
     trainer = pl.Trainer(precision=args.precision,fast_dev_run=args.dry_run, gpus=args.gpus, benchmark=args.benchmark,logger=logger, max_epochs=args.max_epochs)
-    trainer.fit(model=net, train_dataloader=train_dl, val_dataloaders=test_dl)
+    trainer.fit(model=net, train_dataloaders=train_dl, val_dataloaders=test_dl)
     if not args.dry_run:
-        model_path = f"weights/{args.experiment_name}.pth"
+        model_path = f"weights/{experiment_name}.pth"
         torch.save(net.state_dict(), model_path)
         if args.api_key:
-            logger.experiment.log_asset(file_name=args.experiment_name, file_data=model_path)
+            logger.experiment.log_asset(file_name=experiment_name, file_data=model_path)

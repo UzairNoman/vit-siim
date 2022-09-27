@@ -42,9 +42,9 @@ class Net(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         img, label = batch
-        if img.shape[-1] != 224 and self.hparams.model_name == "coat":
-            up = torch.nn.Upsample(size=224) # , _scale_factor=None_, _mode='nearest'_, _align_corners=None_
-            img = up(img)
+        # if img.shape[-1] != 224 and self.hparams.model_name == "coat":
+        #     up = torch.nn.Upsample(size=224) # , _scale_factor=None_, _mode='nearest'_, _align_corners=None_
+        #     img = up(img)
         if self.hparams.cutmix or self.hparams.mixup:
             if self.hparams.cutmix:
                 img, label, rand_label, lambda_= self.cutmix((img, label))
@@ -62,9 +62,8 @@ class Net(pl.LightningModule):
                 out, label = out.float(), label.long()
                 acc = 0
             else:
-                out, label = out[:, 1], label.float()
-
-            loss = self.criterion(out, label)
+                label = label.float()
+            loss = self.criterion(out if self.hparams.criterion == "ce" else out[:, 1], label)
 
         if not self.log_image_flag and not self.hparams.dry_run:
             self.log_image_flag = True
@@ -88,18 +87,21 @@ class Net(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         img, label = batch
-        if img.shape[-1] != 224 and self.hparams.model_name == "coat":
-            up = torch.nn.Upsample(size=224) # , _scale_factor=None_, _mode='nearest'_, _align_corners=None_
-            img = up(img)
+        # if img.shape[-1] != 224 and self.hparams.model_name == "coat":
+        #     up = torch.nn.Upsample(size=224) # , _scale_factor=None_, _mode='nearest'_, _align_corners=None_
+        #     img = up(img)
 
         print("img",img.shape)
         out = self(img)
         if(self.hparams.criterion == "ce"):
-            out, label = out.float(), label.long()
+            out, label = out.cpu().float(), label.cpu().long()
         else:
-            out, label = out[:, 1], label.float()
-
-        loss = self.criterion(out, label)
+            out, label = out.cpu().float(), label.cpu().float()
+        # sm = nn.Softmax()
+        # print(out.shape, label.shape)
+        # out = torch.round(sm(out.cpu()))
+        print(out.shape,label.shape)
+        loss = self.criterion(out if self.hparams.criterion == "ce" else out[:, 1] , label)
         acc = torch.eq(out.argmax(-1), label).float().mean()
         #self.log("val_loss", loss)
         #self.log("val_acc", acc)
@@ -114,13 +116,17 @@ class Net(pl.LightningModule):
         self.log('valid_acc', acc, on_step=True, on_epoch=True)
         self.log('val_loss', loss,on_step=True, on_epoch=True)
 
-        return { 'loss': loss.item(), 'preds': out, 'target': label}
+        return { 'loss': loss.item(), 'preds': out if self.hparams.criterion == "ce" else out[:, 1], 'target': label}
     
     def plot_binary_auc(self, out,label, text="AUC Curve"):
         fpr, tpr, thresholds = roc_curve(label.cpu(), out.cpu())
         auc_rf = auc(fpr, tpr)
-        print(label,out.shape)
-        f1 = f1_score(label.cpu(), torch.round(out.cpu()))
+        # torch.set_printoptions(profile="full")
+        sigm = nn.Sigmoid()
+        # print(sigm(out.cpu()))
+        # print("before",out.cpu())
+        # print("after",out.cpu().float())
+        f1 = f1_score(label, torch.round(sigm(out)))
         plt.figure(1)
         plt.plot([0, 1], [0, 1], 'k--')
         plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))

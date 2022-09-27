@@ -17,8 +17,8 @@ from sklearn.metrics import auc
 from net import Net
 class Settings:
     def __init__(self):
-        self.dataset = "siim"
-        self.num_classes = 2
+        self.dataset = "ham"
+        self.num_classes = 7
         self.model_name = "vit"
         self.patch = 8
         self.batch_size = 128
@@ -29,9 +29,9 @@ class Settings:
         self.beta2 = 0.999
         self.max_epochs = 2
         self.weight_decay = 5e-5
-        self.warmup_epoch = 5
+        self.warmup_epoch = 2
         self.precision = 16
-        self.criterion = "bce"
+        self.criterion = "ce"
         self.smoothing = 0.1
         self.dropout = 0.0
         self.head = 12
@@ -91,6 +91,8 @@ if __name__ == "__main__":
         # )
         logger = TensorBoardLogger(name=experiment_name,save_dir="logs")
         refresh_rate = 1
+    setting_attrs = vars(args)
+    print(', '.join("%s: %s" % item for item in setting_attrs.items()))
     net = Net(args)
     trainer = pl.Trainer(precision=args.precision,fast_dev_run=args.dry_run, gpus=args.gpus, benchmark=args.benchmark,logger=logger, max_epochs=args.max_epochs)
     trainer.fit(model=net, train_dataloader=train_dl, val_dataloaders=test_dl)

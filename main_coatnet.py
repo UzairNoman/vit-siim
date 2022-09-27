@@ -18,16 +18,16 @@ from net import Net
 class Settings:
     def __init__(self):
         self.dataset = "c10"#"siim"
-        self.num_classes = 7#2
+        self.num_classes = 10#2
         self.model_name = "coat"
         self.patch = 8
-        self.batch_size = 128
-        self.eval_batch_size = 64 #1024
+        self.batch_size = 64
+        self.eval_batch_size = 128 #1024
         self.lr = 1e-3
         self.min_lr = 1e-5
         self.beta1 = 0.9
         self.beta2 = 0.999
-        self.max_epochs = 3
+        self.max_epochs = 2
         self.weight_decay = 5e-5
         self.warmup_epoch = 5
         self.precision = 16
@@ -71,7 +71,6 @@ train_ds, test_ds = get_dataset(args)
 #print(data.shape)
 train_dl = torch.utils.data.DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True)
 test_dl = torch.utils.data.DataLoader(test_ds, batch_size=args.eval_batch_size, num_workers=args.num_workers, pin_memory=True)
-
 if __name__ == "__main__":
     experiment_name = get_experiment_name(args)
     if args.api_key:
@@ -91,9 +90,11 @@ if __name__ == "__main__":
         # )
         logger = TensorBoardLogger(name=experiment_name,save_dir="logs")
         refresh_rate = 1
+    setting_attrs = vars(args)
+    print(', '.join("%s: %s" % item for item in setting_attrs.items()))
     net = Net(args)
     trainer = pl.Trainer(precision=args.precision,fast_dev_run=args.dry_run, gpus=args.gpus, benchmark=args.benchmark,logger=logger, max_epochs=args.max_epochs)
-    trainer.fit(model=net, train_dataloader=train_dl, val_dataloaders=test_dl)
+    trainer.fit(model=net, train_dataloaders=train_dl, val_dataloaders=test_dl)
     if not args.dry_run:
         model_path = f"weights/{experiment_name}.pth"
         torch.save(net.state_dict(), model_path)
