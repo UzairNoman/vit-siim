@@ -153,26 +153,26 @@ class SIIM(Dataset):
         if self.transforms is not None:
             img = self.transforms(img)
 
+        if self.purpose != 'test':
+            if self.labels[index] == 1:
+                transformForReplicas = transforms.RandomChoice([
+                    transforms.RandomHorizontalFlip(), 
+                    transforms.RandomVerticalFlip(),
+                    transforms.RandomAutocontrast(),
+                    transforms.RandomAdjustSharpness(sharpness_factor=2),
+                    transforms.RandomEqualize()
+                ])
 
-        if self.labels[index] == 1:
-            transformForReplicas = transforms.RandomChoice([
-                transforms.RandomHorizontalFlip(), 
-                transforms.RandomVerticalFlip(),
-                transforms.RandomAutocontrast(),
-                transforms.RandomAdjustSharpness(sharpness_factor=2),
-                transforms.RandomEqualize()
-            ])
+                transformForReplicas2 = transforms.RandomChoice([
+                    transforms.ColorJitter(brightness=.5, hue=.3),
+                    transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)),
+                    transforms.RandomRotation(degrees=(0, 180)),
+                    transforms.RandomPosterize(bits=2),
+                    
+                ])
 
-            transformForReplicas2 = transforms.RandomChoice([
-                transforms.ColorJitter(brightness=.5, hue=.3),
-                transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)),
-                transforms.RandomRotation(degrees=(0, 180)),
-                transforms.RandomPosterize(bits=2),
-                
-            ])
-
-            img = transformForReplicas(img)
-            img = transformForReplicas2(img)
+                img = transformForReplicas(img)
+                img = transformForReplicas2(img)
         img = img.float()
 
         

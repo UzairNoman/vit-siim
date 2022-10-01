@@ -64,7 +64,6 @@ def get_model(args):
             'learning_rate': 1e-2,
             'epochs': 1,
         }
-        print("class",args.num_classes)
         net = CNNEmbedder(num_classes=args.num_classes,hparams=hparams)
     elif args.model_name == 'coat':
         hparams = {

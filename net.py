@@ -90,8 +90,6 @@ class Net(pl.LightningModule):
         # if img.shape[-1] != 224 and self.hparams.model_name == "coat":
         #     up = torch.nn.Upsample(size=224) # , _scale_factor=None_, _mode='nearest'_, _align_corners=None_
         #     img = up(img)
-
-        print("img",img.shape)
         out = self(img)
         if(self.hparams.criterion == "ce"):
             out, label = out.cpu().float(), label.cpu().long()
@@ -100,7 +98,6 @@ class Net(pl.LightningModule):
         # sm = nn.Softmax()
         # print(out.shape, label.shape)
         # out = torch.round(sm(out.cpu()))
-        print(out.shape,label.shape)
         loss = self.criterion(out if self.hparams.criterion == "ce" else out[:, 1] , label)
         acc = torch.eq(out.argmax(-1), label).float().mean()
         #self.log("val_loss", loss)

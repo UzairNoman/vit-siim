@@ -88,6 +88,8 @@ class ViTEmbedded(nn.Module):
         net = Net(args)
         net.load_state_dict(torch.load(os.path.join(f'weights/{args.experiment_name}.pth')), strict=True)
         net.eval()
+        print(f"Model inside Vit_emb loaded: {args.experiment_name}")
+        args.model_name = 'vit_emb'
         # print(*list(net.model.feature_extractor.children())[:-3]) # torch.Size([1024, 64, 56, 56])
         self.cnn =  nn.Sequential(*list(net.model.feature_extractor.children())[:-3])
 
@@ -107,7 +109,7 @@ class ViTEmbedded(nn.Module):
         # for cnn
         # 18,64,64
         # np.prod(out.shape[-2:])
-        emb = nn.Linear(out.shape[-1], self.hidden).cuda()
+        emb = nn.Linear(out.shape[-1], self.hidden)#.cuda() # COMMENTED WHILE PREDICTION
         out = emb(out)
 
         if self.is_cls_token:
