@@ -43,7 +43,8 @@ class HAM(Dataset):
     
         #(33126, 8)
         
-        train, val = train_test_split(meta_df, test_size=split, random_state=seed)
+        train, test = train_test_split(meta_df, test_size=split, random_state=seed)
+        train, val = train_test_split(train, test_size=split, random_state=seed)
         #do we want to apply stratification here?
         # train, val, test = np.split(meta_df.sample(frac=1, random_state=seed), 
         #                                 [int(split*meta_df.shape[0]), int(((1.0-split)/2.0+split)*meta_df.shape[0])])
@@ -77,10 +78,7 @@ class HAM(Dataset):
         elif purpose=='val':
             return val['image_name'].tolist(), val['target'].tolist(), most_popular_idx
         elif purpose=='test':
-            data_path = os.path.join(directory, "test.csv")
-            test_df = pd.read_csv(data_path, sep=',')
-
-            return test_df['image_name'].tolist(), [], most_popular_idx
+            return test['image_name'].tolist(), test['target'].tolist(), most_popular_idx
 
     def extract_path_img(self,directory,x):
         file = x + '.jpg'

@@ -129,9 +129,11 @@ class Net(pl.LightningModule):
         plt.plot(fpr, tpr, label='{} (area = {})'.format(auc_rf,self.hparams.model_name))
         plt.xlabel('False positive rate')
         plt.ylabel('True positive rate')
-        plt.title('{}, F1-Score: {})'.format(text, f1))
+        #plt.title('{}, F1-Score: {}'.format(text, f1))
+        plt.title('{}'.format(text))
         plt.legend(loc='best')
         self.logger.experiment.add_figure(text, plt.gcf(), self.current_epoch)
+        self.log('f1-score', f1, on_epoch=True)
 
     def plot_multiclass_auc(self, out, label, text="AUC Curve"):
         tpr,fpr,roc_auc = ([[]]*self.hparams.num_classes for _ in range(3))
@@ -140,12 +142,14 @@ class Net(pl.LightningModule):
             fpr[i], tpr[i], _ = roc_curve(label.cpu()==i, out.cpu()[:, i])
             roc_auc[i] = auc(fpr[i], tpr[i])
             ax.plot(fpr[i],tpr[i])
-        f1 = f1_score(label.cpu(), torch.argmax(out.cpu(), dim=1), average ='micro')
+        f1 = f1_score(label.cpu(), torch.argmax(out.cpu(), dim=1), average ='weighted')
         plt.legend(['Class {:d}, AUC {}'.format(d, round(roc_auc[d],3)) for d in range(self.hparams.num_classes)])
-        plt.title('{}, {}, F1-Score: {})'.format(text, self.hparams.model_name, f1))
+        #plt.title('{}, {}, F1-Score: {})'.format(text, self.hparams.model_name, f1))
+        plt.title('{}, {}'.format(text, self.hparams.model_name))
         plt.xlabel('FPR')
         plt.ylabel('TPR')
         self.logger.experiment.add_figure(text, plt.gcf(), self.current_epoch)
+        self.log('f1-score', f1, on_epoch=True)
 
     def validation_epoch_end(self, outputs):
         preds = torch.cat([tmp['preds'] for tmp in outputs])

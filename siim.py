@@ -124,7 +124,6 @@ class SIIM(Dataset):
         elif purpose=='test':
             data_path = os.path.join(directory, "test.csv")
             test_df = pd.read_csv(data_path, sep=',')
-
             return test_df['image_name'].tolist(), []
 
 

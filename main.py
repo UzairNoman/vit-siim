@@ -58,16 +58,16 @@ if not args.gpus:
 
 if args.mlp_hidden != args.hidden*4:
     print(f"[INFO] In original paper, mlp_hidden(CURRENT:{args.mlp_hidden}) is set to: {args.hidden*4}(={args.hidden}*4)")
-train_ds, test_ds = get_dataset(args)
+train_ds, val_ds, test_ds = get_dataset(args)
 # classes = torch.tensor([0, 1, 2])
 # indices = (torch.tensor(train_ds.targets)[..., None] == classes).any(-1).nonzero(as_tuple=True)[0]
 # train_ds = torch.utils.data.Subset(train_ds, indices)
 # test_ds = torch.utils.data.Subset(test_ds, indices)
 #print(data.shape)
 
-# cnn needed drop last True
+# cnn needed drop last
 train_dl = torch.utils.data.DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
-test_dl = torch.utils.data.DataLoader(test_ds, batch_size=args.eval_batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+val_dl = torch.utils.data.DataLoader(val_ds, batch_size=args.eval_batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 
 if __name__ == "__main__":
     t0 = time.time()
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     print(', '.join("%s: %s" % item for item in setting_attrs.items()))
     net = Net(args)
     trainer = pl.Trainer(precision=args.precision,fast_dev_run=args.dry_run, gpus=args.gpus, benchmark=args.benchmark,logger=logger, max_epochs=args.max_epochs)
-    trainer.fit(model=net, train_dataloaders=train_dl, val_dataloaders=test_dl)
+    trainer.fit(model=net, train_dataloaders=train_dl, val_dataloaders=val_dl)
     if not args.dry_run:
         model_path = f"weights/{experiment_name}.pth"
         torch.save(net.state_dict(), model_path)

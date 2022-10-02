@@ -3,6 +3,8 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import torch
+import numpy as np
+from torch.utils.data import random_split
 from autoaugment import CIFAR10Policy, SVHNPolicy
 from criterions import LabelSmoothingCrossEntropyLoss
 from da import RandomCropPaste
@@ -137,7 +139,10 @@ def get_dataset(args):
         train_transform, test_transform = get_transform(args)
         train_ds = torchvision.datasets.CIFAR10(root, train=True, transform=train_transform, download=True)  
         test_ds = torchvision.datasets.CIFAR10(root, train=False, transform=test_transform, download=True)
-
+        valid_size = 0.25
+        num_train = len(train_ds)
+        num_valid = int(np.floor(valid_size * num_train))
+        train_ds, val_ds = random_split(train_ds, [(num_train - num_valid), num_valid])
     elif args.dataset == "c100":
         args.in_c = 3
         args.num_classes=100
@@ -147,9 +152,13 @@ def get_dataset(args):
         train_transform, test_transform = get_transform(args)
         train_ds = torchvision.datasets.CIFAR100(root, train=True, transform=train_transform, download=True)
         test_ds = torchvision.datasets.CIFAR100(root, train=False, transform=test_transform, download=True)
+        valid_size = 0.25
+        num_train = len(train_ds)
+        num_valid = int(np.floor(valid_size * num_train))
+        train_ds, val_ds = random_split(train_ds, [(num_train - num_valid), num_valid])
     elif args.dataset == "siim":
         args.in_c = 3
-        args.num_classes=2
+        args.num_classes = 2
         args.size = 224
         args.padding = 4
         #root = f'D:\Workspace\cv_attention\data\siim'
@@ -157,7 +166,8 @@ def get_dataset(args):
         args.mean, args.std = [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]
         train_transform, test_transform = get_transform(args)
         train_ds = SIIM(root, purpose='train', seed=args.seed, split=0.25, transforms=train_transform)#, tfm_on_patch=tfm_on_patch)
-        test_ds = SIIM(root, purpose='val', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
+        val_ds = SIIM(root, purpose='val', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
+        test_ds = SIIM(root, purpose='test', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
        # train_ds = torchvision.datasets.CIFAR100(root, train=True, transform=train_transform, download=True)
         #test_ds = torchvision.datasets.CIFAR100(root, train=False, transform=test_transform, download=True)
 
@@ -180,12 +190,13 @@ def get_dataset(args):
         args.mean, args.std = [0.4377, 0.4438, 0.4728], [0.1980, 0.2010, 0.1970]
         train_transform, test_transform = get_transform(args)
         train_ds = HAM(root, purpose='train', seed=args.seed, split=0.25, transforms=train_transform)#, tfm_on_patch=tfm_on_patch)
-        test_ds = HAM(root, purpose='val', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
+        val_ds = HAM(root, purpose='val', seed=args.seed, split=0.25, transforms=train_transform)#, tfm_on_patch=tfm_on_patch)
+        test_ds = HAM(root, purpose='test', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
 
     else:
         raise NotImplementedError(f"{args.dataset} is not implemented yet.")
     
-    return train_ds, test_ds
+    return train_ds, val_ds, test_ds
 
 def get_experiment_name(args):
     experiment_name = f"{args.model_name}_{args.dataset}"
