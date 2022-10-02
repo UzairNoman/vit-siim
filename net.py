@@ -107,7 +107,7 @@ class Net(pl.LightningModule):
             auc_score = metrics.roc_auc_score(label.cpu(), out.cpu().squeeze().detach().numpy())
         except ValueError:
             auc_score = 0
-        self.log('auc', auc_score, on_step=True, on_epoch=True)
+        self.log('valid_auc', auc_score, on_step=True, on_epoch=True)
         val_acc = torchmetrics.functional.accuracy(out, label.long())
         self.log('valid_acc_from_tmet', val_acc, on_step=True, on_epoch=True)
         self.log('valid_acc', acc, on_step=True, on_epoch=True)
@@ -115,6 +115,29 @@ class Net(pl.LightningModule):
 
         return { 'loss': loss.item(), 'preds': out if self.hparams.criterion == "ce" else out[:, 1], 'target': label}
     
+    def test_step(self, batch, batch_idx):
+        img, label = batch
+        out = self(img)
+        if(self.hparams.criterion == "ce"):
+            out, label = out.cpu().float(), label.cpu().long()
+        else:
+            out, label = out.cpu().float(), label.cpu().float()
+
+        loss = self.criterion(out if self.hparams.criterion == "ce" else out[:, 1] , label)
+        acc = torch.eq(out.argmax(-1), label).float().mean()
+
+        try:
+            auc_score = metrics.roc_auc_score(label.cpu(), out.cpu().squeeze().detach().numpy())
+        except ValueError:
+            auc_score = 0
+        self.log('test_auc', auc_score, on_step=True, on_epoch=True)
+        test_acc = torchmetrics.functional.accuracy(out, label.long())
+        self.log('test_acc_from_tmet', test_acc, on_step=True, on_epoch=True)
+        self.log('test_acc', acc, on_step=True, on_epoch=True)
+        self.log('test_loss', loss,on_step=True, on_epoch=True)
+
+        return { 'loss': loss.item(), 'preds': out if self.hparams.criterion == "ce" else out[:, 1], 'target': label}
+
     def plot_binary_auc(self, out,label, text="AUC Curve"):
         fpr, tpr, thresholds = roc_curve(label.cpu(), out.cpu())
         auc_rf = auc(fpr, tpr)
@@ -163,9 +186,25 @@ class Net(pl.LightningModule):
         self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
 
         if(self.hparams.criterion == "ce"):
-            self.plot_multiclass_auc(preds,targets)
+            self.plot_multiclass_auc(preds, targets)
         else:
             self.plot_binary_auc(preds, targets, "ROC/AUC Curve")
+
+    def test_end(self, outputs):
+        preds = torch.cat([tmp['preds'] for tmp in outputs])
+        targets = torch.cat([tmp['target'] for tmp in outputs])
+        confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets.long(), num_classes=self.hparams.num_classes)
+
+        df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(), index = range(self.hparams.num_classes), columns=range(self.hparams.num_classes))
+        plt.figure(figsize = (self.hparams.num_classes,self.hparams.num_classes*2))
+        fig_ = sns.heatmap(df_cm, annot=True,fmt="d", cmap='Spectral').get_figure()
+        plt.close(fig_)
+        self.logger.experiment.add_figure("Confusion matrix test", fig_)
+
+        if(self.hparams.criterion == "ce"):
+            self.plot_multiclass_auc(preds, targets, "Test AUC Curve")
+        else:
+            self.plot_binary_auc(preds, targets, "Test ROC/AUC Curve")
 
 
     

@@ -68,6 +68,7 @@ train_ds, val_ds, test_ds = get_dataset(args)
 # cnn needed drop last
 train_dl = torch.utils.data.DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 val_dl = torch.utils.data.DataLoader(val_ds, batch_size=args.eval_batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+test_dl = torch.utils.data.DataLoader(test_ds, batch_size=args.eval_batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 
 if __name__ == "__main__":
     t0 = time.time()
@@ -99,6 +100,8 @@ if __name__ == "__main__":
         torch.save(net.state_dict(), model_path)
         if args.api_key:
             logger.experiment.log_asset(file_name=experiment_name, file_data=model_path)
+    trainer.test(dataloaders=test_dl)
+
     t1 = time.time()
     exec_time = (t1 -t0)/3600
     print(f'{exec_time} hours')
