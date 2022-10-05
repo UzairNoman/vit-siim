@@ -10,14 +10,14 @@ import time
 
 class Settings:
     def __init__(self):
-        self.dataset = "c100"
-        self.num_classes = 100
+        self.dataset = "ham"
+        self.num_classes = 7
         self.criterion = "ce"
 
-        self.model_name = "vit_emb"
+        self.model_name = "coat"
         self.batch_size = 128
-        self.eval_batch_size = 1024
-        self.max_epochs = 30
+        self.eval_batch_size = 32
+        self.max_epochs =  30
 
         self.patch = 8
         self.num_layers = 8#12
@@ -70,6 +70,9 @@ train_dl = torch.utils.data.DataLoader(train_ds, batch_size=args.batch_size, shu
 val_dl = torch.utils.data.DataLoader(val_ds, batch_size=args.eval_batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 test_dl = torch.utils.data.DataLoader(test_ds, batch_size=args.eval_batch_size, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 
+# print("val",next(iter(val_dl)).shape)
+# print(next(iter(test_dl)).shape)
+
 if __name__ == "__main__":
     t0 = time.time()
     experiment_name = get_experiment_name(args)
@@ -100,7 +103,8 @@ if __name__ == "__main__":
         torch.save(net.state_dict(), model_path)
         if args.api_key:
             logger.experiment.log_asset(file_name=experiment_name, file_data=model_path)
-    trainer.test(dataloaders=test_dl)
+    if not args.dataset == "siim":
+        trainer.test(dataloaders=test_dl)
 
     t1 = time.time()
     exec_time = (t1 -t0)/3600

@@ -134,7 +134,7 @@ class HAM(Dataset):
             img = transformForReplicas2(img)
         img = img.float()
      
-        if self.purpose == 'test':
-            return img
-        else:
-            return img, self.labels[index]
+        # if self.purpose == 'test':
+        #     return img
+        # else:
+        return img, self.labels[index]

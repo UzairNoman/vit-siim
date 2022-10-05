@@ -42,9 +42,6 @@ class Net(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         img, label = batch
-        # if img.shape[-1] != 224 and self.hparams.model_name == "coat":
-        #     up = torch.nn.Upsample(size=224) # , _scale_factor=None_, _mode='nearest'_, _align_corners=None_
-        #     img = up(img)
         if self.hparams.cutmix or self.hparams.mixup:
             if self.hparams.cutmix:
                 img, label, rand_label, lambda_= self.cutmix((img, label))
@@ -87,9 +84,6 @@ class Net(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         img, label = batch
-        # if img.shape[-1] != 224 and self.hparams.model_name == "coat":
-        #     up = torch.nn.Upsample(size=224) # , _scale_factor=None_, _mode='nearest'_, _align_corners=None_
-        #     img = up(img)
         out = self(img)
         if(self.hparams.criterion == "ce"):
             out, label = out.cpu().float(), label.cpu().long()
@@ -116,6 +110,7 @@ class Net(pl.LightningModule):
         return { 'loss': loss.item(), 'preds': out if self.hparams.criterion == "ce" else out[:, 1], 'target': label}
     
     def test_step(self, batch, batch_idx):
+        # print(batch.shape)
         img, label = batch
         out = self(img)
         if(self.hparams.criterion == "ce"):
@@ -190,7 +185,7 @@ class Net(pl.LightningModule):
         else:
             self.plot_binary_auc(preds, targets, "ROC/AUC Curve")
 
-    def test_end(self, outputs):
+    def test_epoch_end(self, outputs):
         preds = torch.cat([tmp['preds'] for tmp in outputs])
         targets = torch.cat([tmp['target'] for tmp in outputs])
         confusion_matrix = torchmetrics.functional.confusion_matrix(preds, targets.long(), num_classes=self.hparams.num_classes)

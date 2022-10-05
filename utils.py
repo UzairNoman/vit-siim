@@ -168,8 +168,6 @@ def get_dataset(args):
         train_ds = SIIM(root, purpose='train', seed=args.seed, split=0.25, transforms=train_transform)#, tfm_on_patch=tfm_on_patch)
         val_ds = SIIM(root, purpose='val', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
         test_ds = SIIM(root, purpose='test', seed=args.seed, split=0.25, transforms=test_transform)#, tfm_on_patch=tfm_on_patch)
-       # train_ds = torchvision.datasets.CIFAR100(root, train=True, transform=train_transform, download=True)
-        #test_ds = torchvision.datasets.CIFAR100(root, train=False, transform=test_transform, download=True)
 
     elif args.dataset == "svhn":
         args.in_c = 3
