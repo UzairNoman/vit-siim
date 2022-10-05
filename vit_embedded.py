@@ -109,7 +109,7 @@ class ViTEmbedded(nn.Module):
         # for cnn
         # 18,64,64
         # np.prod(out.shape[-2:])
-        emb = nn.Linear(out.shape[-1], self.hidden)#.cuda() # COMMENTED WHILE PREDICTION
+        emb = nn.Linear(out.shape[-1], self.hidden).cuda() # COMMENTED WHILE PREDICTION
         out = emb(out)
 
         if self.is_cls_token:

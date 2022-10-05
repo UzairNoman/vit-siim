@@ -10,8 +10,8 @@ import time
 
 class Settings:
     def __init__(self):
-        self.dataset = "ham"
-        self.num_classes = 7
+        self.dataset = "c100"
+        self.num_classes = 100
         self.criterion = "ce"
 
         self.model_name = "coat"
