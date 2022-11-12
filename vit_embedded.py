@@ -45,6 +45,7 @@ class ViTEmbedded(nn.Module):
         super(ViTEmbedded, self).__init__()
         # hidden=384
         self.hidden = hidden
+        self.args_cnn = args_cnn
         self.patch = patch # number of patches in one row(or col)
         self.is_cls_token = is_cls_token
         self.patch_size = img_size//self.patch
@@ -109,7 +110,8 @@ class ViTEmbedded(nn.Module):
         # for cnn
         # 18,64,64
         # np.prod(out.shape[-2:])
-        emb = nn.Linear(out.shape[-1], self.hidden).cuda() # COMMENTED WHILE PREDICTION
+
+        emb = nn.Linear(out.shape[-1], self.hidden) if self.args_cnn.predict else nn.Linear(out.shape[-1], self.hidden).cuda() #.cuda() # COMMENTED WHILE PREDICTION
         out = emb(out)
 
         if self.is_cls_token:

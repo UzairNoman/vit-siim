@@ -10,6 +10,7 @@ import time
 from tqdm import tqdm
 class Settings:
     def __init__(self):
+        self.predict = True
         self.dataset = "siim"
         self.num_classes = 2
         self.criterion = "bce"
